@@ -1,0 +1,192 @@
+`<!DOCTYPE html>
+<html>
+<style>
+body {
+  background-image: linear-gradient(to top, #e6e9f0 0%, #eef1f5 100%);
+font-family: 'Roboto', sans-serif;
+  margin: 0;
+height: 100vh;
+}
+
+.counter {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  text-align: center;
+}
+
+.counter.hide {
+  transform: translate(-50%, -50%) scale(0);
+  animation: hide .2s ease-out;
+}
+
+@keyframes hide {
+  0% {
+      transform: translate(-50%, -50%) scale(1);
+  }
+
+  100% {
+      transform: translate(-50%, -50%) scale(0);
+  }
+}
+
+.final {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) scale(0);
+}
+
+.final.show {
+  transform: translate(-50%, -50%) scale(1);
+  animation: show .3s ease-in;
+}
+
+@keyframes show {
+  0% {
+      transform: translate(-50%, -50%) scale(0);
+  }
+
+  80% {
+      transform: translate(-50%, -50%) scale(1.4);
+  }
+
+  100% {
+      transform: translate(-50%, -50%) scale(1);
+  }
+}
+
+.nums {
+color: #3498db;
+position: relative;
+font-size: 200px;
+overflow: hidden;
+width: 280px;
+height:180px;
+}
+
+.nums span {
+position: absolute;
+left: 50%;
+top: 50%;
+transform: translate(-50%, -50%) rotate(180deg);
+transform-origin: bottom center;
+}
+
+.nums span.in {
+  transform: translate(-50%, -50%) rotate(0deg);
+animation: goIn .5s ease-in-out;
+}
+
+.nums span.out {
+animation: goOut .5s ease-in-out;
+}
+
+@keyframes goIn {
+0% {
+  transform: translate(-50%, -50%) rotate(120deg);
+}
+30% {
+  transform: translate(-50%, -50%) rotate(-20deg);
+}
+
+60% {
+  transform: translate(-50%, -50%) rotate(10deg);
+}
+
+90%, 100% {
+  transform: translate(-50%, -50%) rotate(0deg);
+}
+
+}
+
+@keyframes goOut {
+0%, 30% {
+  transform: translate(-50%, -50%) rotate(0deg);
+}
+
+60% {
+  transform: translate(-50%, -50%) rotate(20deg);
+}
+
+100% {
+  transform: translate(-50%, -50%) rotate(-180deg);
+}
+}
+
+h4 {
+font-size: 20px;
+margin: 5px;
+text-transform: uppercase;
+}
+</style>
+
+<head>
+    <title>Oximeter Reading Page</title>
+    <meta http-equiv = "refresh" content = "20; url = https://onemodel.azurewebsites.net/healthCareResult"/>
+   </head>
+   <h1 align="center">Please keep the finger on Oximeter sensor</h1>
+   <div class="counter">
+     <div class="nums" id="updatedSpan">
+     </div>
+   </div>
+   <div class="final">
+     <h4>Redirecting to Health Care Result Page</h4>
+   </div>
+<script>
+    var data = loopSpan();
+    document.getElementById("updatedSpan").innerHTML = data;
+
+    function loopSpan(){
+    let str = "";
+    var str1 = '<span class="in">'+20+'</span>';
+    for(let i=19;i>0;i--){
+    str = str + '<span>'+i+'</span>';
+  }
+  return str1+str;
+}
+</script> 
+<script>
+const nums = document.querySelectorAll('.nums span');
+const counter = document.querySelector('.counter');
+const finalMessage = document.querySelector('.final');
+const repl = document.getElementById('replay');
+
+runAnimation();
+
+function resetDOM() {
+counter.classList.remove('hide');
+finalMessage.classList.remove('show');
+
+nums.forEach(num => {
+num.classList.value = '';
+});
+
+nums[0].classList.add('in');
+}
+
+function runAnimation() {
+nums.forEach((num, idx) => {
+const penultimate = nums.length - 1;
+num.addEventListener('animationend', (e) => {
+  if(e.animationName === 'goIn' && idx !== penultimate){
+    num.classList.remove('in');
+    num.classList.add('out');
+  } else if (e.animationName === 'goOut' && num.nextElementSibling){
+    num.nextElementSibling.classList.add('in');
+  } else {
+    counter.classList.add('hide');
+    finalMessage.classList.add('show');
+  }
+});
+});
+}
+if(repl){
+repl.addEventListener('click', () => {
+resetDOM();
+runAnimation();
+});
+}
+</script>
+</html>
