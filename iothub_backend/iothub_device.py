@@ -11,7 +11,7 @@ from azure.iot.device import Message
 from azure.iot.device.aio import IoTHubDeviceClient
 from azure.iot.device import MethodResponse
 
-CONNECTION_STRING = "HostName=iotcloudhub.azure-devices.net;DeviceId=covidiothub;SharedAccessKey=W4z4qLw1wjDR0eDBKNZLChXkog3Cadtsj1G9fJFRn8E="
+CONNECTION_STRING = "HostName=COVID-Analyzer-IotHub.azure-devices.net;DeviceId=RaspberryPi;SharedAccessKey=hichBTE3gZ4gPw8YBotBQRypNbu0wlJ31RFfLc+09Gs="
 Interval = 1
 final_o =0
 final_p=0
@@ -31,10 +31,8 @@ def Oximeter_reading():
     print('sensor starting...')
     hrm = HeartRateMonitor(print_raw=args.raw, print_result=(not args.raw))
     hrm.start_sensor()
-    try:
-        time.sleep(args.time)
-    except KeyboardInterrupt:
-        print('keyboard interrupt detected, exiting...')
+    time.sleep(args.time)
+    
     oxi=[]
     pulse=[]
     o=[]
@@ -44,6 +42,9 @@ def Oximeter_reading():
     pulse=hrm.get_pulse_values()
     hrm.stop_sensor()
     print('sensor stoped!')
+    if(len(oxi)==0 and len(pulse)==0):
+        print('please put finger over oximeter sensor')
+        return 0.00,0.00
     #oximeter
     for i in range(len(oxi)):
         if 87<oxi[i]<100:
@@ -114,16 +115,19 @@ def Temperature_reading():
     sensor = MLX90614(bus, address=0x5A)
     cnt=0
     temp_sum = 0.0
-    while cnt<20: # getting background temperature for 2 seconds
+    try:
+        while cnt<20: # getting background temperature for 2 seconds
         #ambient =round(sensor.get_ambient(),1)
-        temp_sum +=sensor.get_object_1()
-        time.sleep(0.1)
-        cnt+=1
-        if cnt>=19:
-            addnum=random.uniform(4.1,5.5)
-            body_temp = temp_sum/cnt + addnum
-            body_temp= (body_temp*1.8) + 32
-            return (str(round(body_temp,1)))
+            temp_sum +=sensor.get_object_1()
+            time.sleep(0.1)
+            cnt+=1
+            if cnt>=19:
+                addnum=random.uniform(4.1,5.5)
+                body_temp = temp_sum/cnt + addnum
+                body_temp= (body_temp*1.8) + 32
+                return (round(body_temp,1))
+    except:
+        return 0.0
         
 
 async def main(): 
@@ -139,17 +143,23 @@ async def main():
                 "temperature"
             )  # Wait for method1 calls
             print('temperature event')
-            temp = random.randint(90,100)
-            print("payload: ",method_request.payload)
+            #temp = Temperature_reading()
+            print("id received: ",method_request.payload)
             oxi_o=0
             oxi_p=0
-            payload = {"Temperature": temp, "Oximeter_reading": oxi_o, "Oximeter_Pulse_reading":oxi_p}  # set response payload
+            payload = {"id":method_request.payload,"Temperature": Temperature_reading(), "Oximeter_reading": oxi_o, "Oximeter_Pulse_reading":oxi_p}  # set response payload
             status = 200  # set return status code
             print("executed temperature")
             method_response = MethodResponse.create_from_method_request(
                 method_request, status, payload
             )
             await device_client.send_method_response(method_response)  # send response
+            json_body=json.dumps(payload)
+            try:
+                await device_client.send_message(json_body)  
+                print('data sent')
+            except:
+                print("data not sent since not connected")
 
     async def method2_listener(device_client):
         while True:
@@ -158,9 +168,8 @@ async def main():
             )  # Wait for method1 calls
             print('oximeter event')
             temp = 0
-            print("payload: ",method_request.payload)
-            oxi_o=random.randint(90,199)
-            oxi_p=random.randint(90,199)
+            print("id received: ",method_request.payload)
+            oxi_o,oxi_p = Oximeter_reading()
             payload = {"Temperature": temp, "Oximeter_reading": oxi_o, "Oximeter_Pulse_reading":oxi_p}  # set response payload
             status = 200  # set return status code
             print("executed oximeter")
@@ -168,7 +177,12 @@ async def main():
                 method_request, status, payload
             )
             await device_client.send_method_response(method_response)  # send response
-
+            json_body=json.dumps(payload)
+            try:
+                await device_client.send_message(json_body)  
+                print('data sent')
+            except:
+                print("data not sent since not connected")
 
     async def generic_method_listener(device_client):
         while True:

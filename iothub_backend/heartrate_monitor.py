@@ -26,7 +26,11 @@ class HeartRateMonitor(object):
         self.print_result = print_result
 
     def run_sensor(self):
-        sensor = MAX30102()
+        try:
+            sensor = MAX30102()
+        except:
+            print("Oximeter not working")
+            return 0
         ir_data = []
         red_data = []
         bpms = []
@@ -68,10 +72,13 @@ class HeartRateMonitor(object):
         sensor.shutdown()
 
     def start_sensor(self):
-        self._thread = threading.Thread(target=self.run_sensor)
-        self._thread.stopped = False
-        self._thread.start()
-
+        try:
+            self._thread = threading.Thread(target=self.run_sensor)
+            self._thread.stopped = False
+            self._thread.start()
+        except:
+            print("oximeter is not running")
+            
     def stop_sensor(self, timeout=2.0):
         self._thread.stopped = True
         self.bpm = 0
